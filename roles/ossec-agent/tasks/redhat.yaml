@@ -1,0 +1,8 @@
+- name: install ossec-hids
+  ansible.builtin.yum:
+    name: ossec-hids
+    state: latest
+- name: install ossec-hids-server
+  ansible.builtin.yum:
+    name: ossec-hids-server
+    state: latest

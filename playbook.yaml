@@ -1,0 +1,28 @@
+- name: My first play
+  hosts: hosts
+  tasks:
+   - name: Ping my hosts
+     ansible.builtin.ping:
+
+   - name: Print message
+     ansible.builtin.debug:
+       msg: Hello world
+
+- hosts: logging
+  roles:
+    - ossec-server
+
+- hosts: database
+  roles:
+    - ossec-agent
+    - database
+
+- hosts: reverse-proxy
+  roles:
+    - ossec-agent
+    - proxy
+
+- hosts: web-server
+  roles:
+    - ossec-agent
+    - server

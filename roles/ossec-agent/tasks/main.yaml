@@ -1,0 +1,15 @@
+- name: Install the correct web server for RHEL
+  import_tasks: redhat.yaml
+  when: ansible_facts['os_family']|lower == 'redhat'
+
+- name: Install the correct web server for Debian
+  import_tasks: debian.yaml
+  when: ansible_facts['os_family']|lower == 'debian'
+
+- name: Start ossec service
+  become: true
+  service:
+    name: ossec-hids
+    state: started
+    # - name: load ossec.conf file
+      # src: ossec.conf
