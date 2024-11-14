@@ -1,25 +1,44 @@
 terraform {
-  required_version = ">= 0.15"
   required_providers {
     proxmox = {
-      source = "telmate/proxmox"
+      source = "bpg/proxmox"
+      version = "0.66.3"
     }
   }
 }
 
 provider "proxmox" {
- pm_api_url   = "https://127.0.0.1:8006/api2/json"
- pm_user      = "root@pam"
- pm_password  = ""
- pm_tls_insecure = true
+ endpoint  = "https://192.168.122.243:8006/api2/json"
+ username  = "root@pam"
+ password  = ""
+ insecure  = true
+ ssh {
+    agent = true
+ }
 }
 
-resource "proxmox_vm_qemu" "my_vm" {
+resource "proxmox_virtual_environment_vm" "my_vm" {
  name       = "my-vm"
- target_node = "pve"
- clone      = "debian-template"
- storage    = "local-lvm"
- cores      = 1
- memory     = 1024
+ node_name  = "pve"
+ clone {
+    vm_id   = 100
+ }
+ disk {
+    interface    = "virtio0"
+    size         = 20
+    datastore_id = "local-lvm"
+    file_format = "raw
+ }
+
+ cpu {
+    cores        = 2
+    type         = "x86-64-v2-AES"  # recommended for modern CPUs
+  }
+
+  memory {
+    dedicated = 2048
+    floating  = 2048 # set equal to dedicated to enable ballooning
+  }
+
 }
 
