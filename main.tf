@@ -8,9 +8,9 @@ terraform {
 }
 
 provider "proxmox" {
- endpoint  = "https://192.168.122.243:8006/api2/json"
+ endpoint  = "https://192.168.122.29:8006/api2/json"
  username  = "root@pam"
- password  = ""
+ password  = "proxmox"
  insecure  = true
  ssh {
     agent = true
@@ -19,7 +19,8 @@ provider "proxmox" {
 
 resource "proxmox_virtual_environment_vm" "my_vm" {
  name       = "my-vm"
- node_name  = "pve"
+ node_name  = "myproxmox"
+ stop_on_destroy = true
  clone {
     vm_id   = 100
  }
@@ -27,7 +28,7 @@ resource "proxmox_virtual_environment_vm" "my_vm" {
     interface    = "virtio0"
     size         = 20
     datastore_id = "local-lvm"
-    file_format = "raw
+    file_format = "raw"
  }
 
  cpu {
