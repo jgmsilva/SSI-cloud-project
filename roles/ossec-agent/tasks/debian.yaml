@@ -1,4 +1,4 @@
-- name: "Debian/Ubintu | Ensure gpg is installed"
+- name: "Debian/Ubuntu | Ensure gpg is installed"
   become: true
   apt:
     pkg: gpg
