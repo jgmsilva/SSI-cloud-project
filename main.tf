@@ -16,20 +16,26 @@ provider "proxmox" {
     agent = true
   }
 }
-resource "tls_private_key" "rsa-4096-audit-key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
+
 resource "proxmox_virtual_environment_vm" "audit_vm" {
   name            = "audit"
   node_name       = var.proxmox_nodename
   stop_on_destroy = true
+
   initialization {
 
+    ip_config {
+      ipv4 {
+        address = "192.168.3.234/24"
+        gateway = "192.168.3.1"
+      }
+    }
+
     user_account {
-      # do not use this in production, configure your own ssh key instead!
-      username = "user"
+      keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
+      username = "ubuntu-audit"
       password = "password"
+
     }
   }
 
@@ -49,6 +55,11 @@ resource "proxmox_virtual_environment_vm" "audit_vm" {
     dedicated = 2048
     floating  = 2048 # set equal to dedicated to enable ballooning
   }
+
+  network_device {
+    bridge = "vmbr0"
+  }
+
 }
 
 
@@ -58,16 +69,23 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
   node_name = var.proxmox_nodename
 
   initialization {
+
+    ip_config {
+      ipv4 {
+        address = "192.168.3.233/24"
+        gateway = "192.168.3.1"
+      }
+    }
+
     user_account {
       # do not use this in production, configure your own ssh key instead!
-      username = "user"
+      username = "ubuntu_vm"
       password = "password"
+      keys = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
     }
   }
   stop_on_destroy = true
-  # clone {
-  #   vm_id = 100
-  # }
+
   disk {
     interface    = "virtio0"
     size         = 20
@@ -87,6 +105,11 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
     floating  = each.value.memory # set equal to dedicated to enable ballooning
   }
 
+  network_device {
+    bridge = "vmbr0"
+  }
+
+
 }
 
 
@@ -95,4 +118,18 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   datastore_id = "local"
   node_name    = "pve"
   url          = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+}
+
+resource "tls_private_key" "ubuntu_vm_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+output "ubuntu_vm_private_key" {
+  value     = tls_private_key.ubuntu_vm_key.private_key_pem
+  sensitive = true
+}
+
+output "ubuntu_vm_public_key" {
+  value = tls_private_key.ubuntu_vm_key.public_key_openssh
 }
