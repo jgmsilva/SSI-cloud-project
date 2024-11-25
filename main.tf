@@ -26,15 +26,14 @@ resource "proxmox_virtual_environment_vm" "audit_vm" {
 
     ip_config {
       ipv4 {
-        address = "192.168.3.234/24"
-        gateway = "192.168.3.1"
+        address = "192.168.122.246/24"
+        gateway = "192.168.122.1"
       }
     }
 
     user_account {
       keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
       username = "ubuntu-audit"
-      password = "password"
 
     }
   }
@@ -43,7 +42,9 @@ resource "proxmox_virtual_environment_vm" "audit_vm" {
     interface    = "virtio0"
     size         = 20
     datastore_id = "local-lvm"
-    file_format  = "raw"
+    iothread     = true
+    discard      = "on"
+    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
   }
 
   cpu {
@@ -72,15 +73,13 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
 
     ip_config {
       ipv4 {
-        address = "192.168.3.233/24"
-        gateway = "192.168.3.1"
+        address = "192.168.122.245/24"
+        gateway = "192.168.122.1"
       }
     }
 
     user_account {
-      # do not use this in production, configure your own ssh key instead!
-      username = "ubuntu_vm"
-      password = "password"
+      username = "ubuntu-vm"
       keys = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
     }
   }
