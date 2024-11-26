@@ -9,3 +9,7 @@ variable "clientvm_object" {
 variable "proxmox_nodename" {
   type = string
 }
+
+variable "proxmox_endpoint" {
+  type = string
+}

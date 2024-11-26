@@ -1,22 +1,3 @@
-terraform {
-  required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = "0.66.3"
-    }
-  }
-}
-
-provider "proxmox" {
-  endpoint = "https://192.168.122.243:8006/api2/json"
-  username = "root@pam"
-  password = "proxmox"
-  insecure = true
-  ssh {
-    agent = true
-  }
-}
-
 resource "proxmox_virtual_environment_vm" "audit_vm" {
   name            = "audit"
   node_name       = var.proxmox_nodename
@@ -33,7 +14,7 @@ resource "proxmox_virtual_environment_vm" "audit_vm" {
 
     user_account {
       keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
-      username = "ubuntu-audit"
+      username = "ansible"
 
     }
   }
@@ -48,13 +29,13 @@ resource "proxmox_virtual_environment_vm" "audit_vm" {
   }
 
   cpu {
-    cores = 2
+    cores = 1
     type  = "x86-64-v2-AES" # recommended for modern CPUs
   }
 
   memory {
-    dedicated = 2048
-    floating  = 2048 # set equal to dedicated to enable ballooning
+    dedicated = 512
+    floating  = 512 # set equal to dedicated to enable ballooning
   }
 
   network_device {
@@ -79,7 +60,7 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
     }
 
     user_account {
-      username = "ubuntu-vm"
+      username = "ansible"
       keys = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
     }
   }
@@ -95,7 +76,7 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
   }
 
   cpu {
-    cores = 2
+    cores = 1
     type  = "x86-64-v2-AES" # recommended for modern CPUs
   }
 
@@ -115,7 +96,7 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
 resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   content_type = "iso"
   datastore_id = "local"
-  node_name    = "pve"
+  node_name    = var.proxmox_nodename
   url          = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 }
 
@@ -124,11 +105,29 @@ resource "tls_private_key" "ubuntu_vm_key" {
   rsa_bits  = 2048
 }
 
-output "ubuntu_vm_private_key" {
-  value     = tls_private_key.ubuntu_vm_key.private_key_pem
-  sensitive = true
+resource "local_file" "ansible_inventory" {
+  filename = "./inventory.ini"
+  file_permission = "0666"
+  content = templatefile("./templates/inventory.tpl",
+    {
+      audits = proxmox_virtual_environment_vm.audit_vm.initialization[0].ip_config[0].ipv4[*].address
+      clients = values(proxmox_virtual_environment_vm.client_vm)[*].initialization[0].ip_config[0].ipv4[0].address
+    })
+}
+resource "local_file" "ansible_private_key" {
+  filename = "./keys/ansible_key.pem"
+  content = tls_private_key.ubuntu_vm_key.private_key_openssh
+  file_permission = "0600"
 }
 
-output "ubuntu_vm_public_key" {
-  value = tls_private_key.ubuntu_vm_key.public_key_openssh
+resource "local_file" "ansible_public_key" {
+  filename = "./keys/ansible_key.pub"
+  content = trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)
+  file_permission = "0666"
+}
+
+resource "local_file" "known_hosts" {
+  filename = "./terraform_known_hosts"
+  content = ""
+  file_permission = "0666"
 }

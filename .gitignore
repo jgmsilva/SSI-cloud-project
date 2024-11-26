@@ -1,4 +1,10 @@
+*.tfstate
+*.tfstate.backup
 .terraform
 .venv
 keys/
 .keys/
+*.pem
+*.pub
+inventory.ini
+terraform_known_hosts

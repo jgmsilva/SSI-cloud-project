@@ -1,4 +1,6 @@
-proxmox_nodename = "pve"
+proxmox_endpoint = "192.168.122.29:8006"
+
+proxmox_nodename = "myproxmox"
 
 clientvm_object = {
   "vm1" = {
