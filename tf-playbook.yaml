@@ -1,0 +1,13 @@
+- name: Configuring hardening
+  hosts: all
+  become: yes
+  roles:
+    - devsec.hardening.os_hardening
+    - devsec.hardening.ssh_hardening
+
+- name: Configure nginx
+  hosts: client
+  become: yes
+  roles:
+    - nginxinc.nginx
+    - devsec.hardening.nginx_hardening

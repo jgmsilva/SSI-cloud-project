@@ -1,8 +1,11 @@
 variable "clientvm_object" {
   type = map(object({
     name = string
-    role = string
+    tags = list(string)
+    ipv4_address = string
     memory = number
+    cpu_cores = number
+    disk_size = number
   }))
 }
 
