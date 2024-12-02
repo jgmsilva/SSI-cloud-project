@@ -1,0 +1,13 @@
+- name: install database
+
+postgresql_version: 16
+postgresql_listen_address: "0.0.0.0"
+postgresql_port: 5432
+postgresql_data_directory: "/var/lib/pgsql/{{ postgresql_version }}/data"
+postgresql_max_connections: 100
+postgresql_shared_buffers: "128MB"
+  # postgresql_auth_users:
+  #- username: admin
+  # password: adminpassword
+  # database: admin_db
+

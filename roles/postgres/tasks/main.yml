@@ -1,0 +1,43 @@
+- name: Install PostgreSQL
+  ansible.builtin.yum:
+    name: "postgresql{{ postgresql_version }}-server"
+    state: present
+
+- name: Initialize PostgreSQL database
+  ansible.builtin.command:
+    cmd: "/usr/pgsql-{{ postgresql_version }}/bin/postgresql-{{ postgresql_version }}-setup initdb"
+  args:
+    creates: "{{ postgresql_data_directory }}/PG_VERSION"
+
+- name: Configure postgresql.conf
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: "/var/lib/pgsql/{{ postgresql_version }}/data/postgresql.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+
+- name: Configure pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "/var/lib/pgsql/{{ postgresql_version }}/data/pg_hba.conf"
+    owner: postgres
+    group: postgres
+    mode: '0640'
+
+- name: Start and enable PostgreSQL service
+  ansible.builtin.service:
+    name: "postgresql-{{ postgresql_version }}"
+    state: started
+    enabled: true
+
+- name: Create PostgreSQL users and databases
+  ansible.builtin.postgresql_user:
+    name: "{{ item.username }}"
+    password: "{{ item.password }}"
+    db: "{{ item.database }}"
+    state: present
+  loop: "{{ postgresql_auth_users }}"
+  become: true
+  become_user: postgres
+

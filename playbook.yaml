@@ -15,7 +15,7 @@
 - hosts: database
   roles:
     - ossec-agent
-    - database
+    - postgres
 
 - hosts: reverse-proxy
   roles:
