@@ -2,7 +2,7 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
   for_each  = try(var.clientvm_object, {})
   name      = each.value.name
   node_name = var.proxmox_nodename
-  tags = each.value.tags
+  tags      = each.value.tags
 
   initialization {
 
@@ -15,7 +15,7 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
 
     user_account {
       username = "ansible"
-      keys = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
+      keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
     }
   }
   stop_on_destroy = true
@@ -60,29 +60,29 @@ resource "tls_private_key" "ubuntu_vm_key" {
 
 locals {
   inventory_groups = {
-    audits = [ for vm in values(proxmox_virtual_environment_vm.client_vm): var.clientvm_object[vm.name].ipv4_address if contains(vm.tags,"audit")]
-      clients = [ for vm in values(proxmox_virtual_environment_vm.client_vm): var.clientvm_object[vm.name].ipv4_address if contains(vm.tags,"web-server")]
-    }
+    audits  = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.clientvm_object[vm.name].ipv4_address if contains(vm.tags, "audit")]
+    clients = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.clientvm_object[vm.name].ipv4_address if contains(vm.tags, "web-server")]
+  }
 }
 resource "local_file" "ansible_inventory" {
-  filename = "./inventory.ini"
+  filename        = "./inventory.ini"
   file_permission = "0666"
-  content = templatefile("./templates/inventory.tpl", local.inventory_groups)
+  content         = templatefile("./templates/inventory.tpl", local.inventory_groups)
 }
 resource "local_file" "ansible_private_key" {
-  filename = "./keys/ansible_key.pem"
-  content = tls_private_key.ubuntu_vm_key.private_key_openssh
+  filename        = "./keys/ansible_key.pem"
+  content         = tls_private_key.ubuntu_vm_key.private_key_openssh
   file_permission = "0600"
 }
 
 resource "local_file" "ansible_public_key" {
-  filename = "./keys/ansible_key.pub"
-  content = trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)
+  filename        = "./keys/ansible_key.pub"
+  content         = trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)
   file_permission = "0666"
 }
 
 resource "local_file" "known_hosts" {
-  filename = "./terraform_known_hosts"
-  content = ""
+  filename        = "./terraform_known_hosts"
+  content         = ""
   file_permission = "0666"
 }
