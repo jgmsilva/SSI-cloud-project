@@ -1,5 +1,5 @@
 - name: My first play
-  hosts: hosts
+  hosts: all
   tasks:
    - name: Ping my hosts
      ansible.builtin.ping:
@@ -8,21 +8,14 @@
      ansible.builtin.debug:
        msg: Hello world
 
-- hosts: logging
+- hosts: client
+  roles:
+    - server
+    - postgres
+
+- hosts: audit
   roles:
     - ossec-server
 
-- hosts: database
-  roles:
-    - ossec-agent
-    - postgres
 
-- hosts: reverse-proxy
-  roles:
-    - ossec-agent
-    - proxy
 
-- hosts: web-server
-  roles:
-    - ossec-agent
-    - server
