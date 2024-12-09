@@ -1,0 +1,32 @@
+- assert:
+    that:
+      - ssh_authorize_user_targets | length > 0
+  tags:
+    - check_vars
+
+- name: Generate SSH Key Pair
+  community.crypto.openssh_keypair:
+    path: "/home/{{ ssh_authorize_user_source_user }}/.ssh/id_rsa"
+
+- name: Get SSH Public Key from Source
+  slurp:
+    src: "/home/{{ ssh_authorize_user_source_user }}/.ssh/id_rsa.pub"
+  register: source_user_key
+  failed_when: source_user_key['content'] is undefined or source_user_key['content'] | b64decode == ""
+
+- name: Add SSH Key to Target Hosts
+  authorized_key:
+    user: "{{ ssh_authorize_user_target_user }}"
+    key: "{{ source_user_key['content'] | b64decode }}"
+  loop: "{{ ssh_authorize_user_targets }}"
+  loop_control:
+    label: "{{ item }}"
+  delegate_to: "{{ item }}"
+
+- debug:
+    msg: >
+      "{{ ssh_authorize_user_source_user }}@{{ inventory_hostname }}
+      authorized to log in to {{ ssh_authorize_user_target_user }}@{{ item }}"
+  loop: "{{ ssh_authorize_user_targets }}"
+  loop_control:
+    label: "{{ item }}"
