@@ -1,34 +1,55 @@
 ---
 - name: Install PostgreSQL
+  become: true
   ansible.builtin.apt:
-    name: "postgresql{{ postgresql_version }}"
+    name: "postgresql-{{ postgresql_version }}"
     state: present
 
-- name: Initialize PostgreSQL database
-  ansible.builtin.command:
-    cmd: "/usr/pgsql-{{ postgresql_version }}/bin/postgresql-{{ postgresql_version }}-setup initdb"
-  args:
-    creates: "{{ postgresql_data_directory }}/PG_VERSION"
+- name: Ensure required dependencies are installed
+  become: true
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - python3
+    - python3-pip
+    - python3-psycopg2
+
+- name: Install psycopg2 via pip 
+  become: true
+  ansible.builtin.pip:
+    name: "psycopg2"
+    state: present
+
+# - name: Initialize PostgreSQL database
+#   ansible.builtin.command:
+#     cmd: "/usr/pgsql-{{ postgresql_version }}/bin/postgresql-{{ postgresql_version }}-setup initdb"
+#   args:
+#     creates: "{{ postgresql_data_directory }}/PG_VERSION"
 
 - name: Configure postgresql.conf
+  become: true
+  become_user: postgres
   ansible.builtin.template:
     src: postgresql.conf.j2
-    dest: "/var/lib/pgsql/{{ postgresql_version }}/data/postgresql.conf"
+    dest: "/var/lib/postgresql/{{ postgresql_version }}/main/postgresql.conf"
     owner: postgres
     group: postgres
     mode: "0640"
 
 - name: Configure pg_hba.conf
+  become: true
+  become_user: postgres
   ansible.builtin.template:
     src: pg_hba.conf.j2
-    dest: "/var/lib/pgsql/{{ postgresql_version }}/data/pg_hba.conf"
+    dest: "/var/lib/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
     owner: postgres
     group: postgres
     mode: "0640"
 
 - name: Start and enable PostgreSQL service
   ansible.builtin.service:
-    name: "postgresql-{{ postgresql_version }}"
+    name: "postgresql"
     state: started
     enabled: true
 

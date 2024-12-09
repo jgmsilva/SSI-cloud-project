@@ -1,12 +1,15 @@
-- name: My first play
+- name: Init Machines
   hosts: all
   tasks:
-   - name: Ping my hosts
-     ansible.builtin.ping:
+    - name: Ping my hosts
+      ansible.builtin.ping:
 
-   - name: Print message
-     ansible.builtin.debug:
-       msg: Hello world
+    - name: Install ACL
+      become: true
+      ansible.builtin.apt:
+        name: "acl"
+        update_cache: yes
+       
 
 - hosts: client
   roles:
@@ -16,6 +19,3 @@
 - hosts: audit
   roles:
     - ossec-server
-
-
-
