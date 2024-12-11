@@ -126,11 +126,9 @@ IgnoreRhosts yes
 IgnoreUserKnownHosts yes
 HostbasedAuthentication no
 
-{% if ssh_pam_support %}
 # Enable PAM to enforce system wide rules.
 UsePAM no
 
-{% endif %}
 {# Set AuthenticationMethods per default to publickey -#}
 {# AuthenticationMethods was introduced in OpenSSH 6.2 - https://www.openssh.com/txt/release-6.2 -#}
 {% if sshd_version is version('6.2', '>=') %}

@@ -11,12 +11,25 @@
     policy: "{{ os_selinux_policy }}"
     state: "{{ os_selinux_state }}" # noqa args - see https://github.com/ansible/ansible-lint/issues/2930
 
+- name: restart the server
+  shell: (sleep 2 && shutdown -r now) &
+  async: 1
+  poll: 0
+  ignore_errors: true
+
+- name: wait for the server to come back
+  wait_for:
+    host: "{{ ansible_host }}"
+    port: 22
+    delay: 5
+
 - name: Authorize the following ports for selinux - {{ ssh_server_ports }}
+  become: true
   community.general.seport:
     ports: "{{ item }}"
     proto: tcp
     setype: ssh_port_t
-    state: presentcd
+    state: present
   loop: "{{ ssh_server_ports }}"
 
 - name: Check if ssh_password module is already installed
