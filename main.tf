@@ -1,5 +1,5 @@
 resource "proxmox_virtual_environment_vm" "client_vm" {
-  for_each  = try(var.clientvm_object, {})
+  for_each  = try(var.servervm_object, {})
   name      = each.value.name
   node_name = var.proxmox_nodename
   tags      = each.value.tags
@@ -60,8 +60,8 @@ resource "tls_private_key" "ubuntu_vm_key" {
 
 locals {
   inventory_groups = {
-    audits  = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.clientvm_object[vm.name].ipv4_address if contains(vm.tags, "audit")]
-    clients = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.clientvm_object[vm.name].ipv4_address if contains(vm.tags, "web-server")]
+    audits  = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.servervm_object[vm.name].ipv4_address if contains(vm.tags, "audit")]
+    servers = [for vm in values(proxmox_virtual_environment_vm.client_vm) : var.servervm_object[vm.name].ipv4_address if contains(vm.tags, "web-server")]
   }
 }
 resource "local_file" "ansible_inventory" {

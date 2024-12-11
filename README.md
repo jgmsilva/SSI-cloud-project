@@ -1,9 +1,10 @@
 # Local Cloud Infrastructure in PROXMOX
 
 ## Terraform
+Promox provider: https://github.com/bpg/terraform-provider-proxmox
 
 ## Ansible
-
+Reference for hardening playbook and roles: https://github.com/dev-sec/ansible-collection-hardening
 ###  Directories explanations
 
 - ***roles/ :*** The directory containing all project roles.

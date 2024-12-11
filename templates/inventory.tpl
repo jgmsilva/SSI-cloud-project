@@ -6,7 +6,7 @@ ansible_ssh_common_args = "-F ./ssh_config.local"
 ${ip}
 %{ endfor ~}
 
-[client]
-%{ for ip in clients ~}
+[server]
+%{ for ip in servers ~}
 ${ip}
 %{ endfor ~}

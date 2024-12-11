@@ -1,0 +1,90 @@
+---
+- name: Fetch OS dependent variables
+  ansible.builtin.include_vars:
+    file: "{{ item }}"
+    name: os_vars
+  with_first_found:
+    - files:
+        - "{{ ansible_facts.distribution }}_{{ ansible_facts.distribution_major_version | default() }}.yml"
+        - "{{ ansible_facts.distribution }}.yml"
+        - "{{ ansible_facts.os_family }}_{{ ansible_facts.distribution_major_version | default() }}.yml"
+        - "{{ ansible_facts.os_family }}.yml"
+      skip: true
+  tags: always
+
+# we only override variables with our default, if they have not been specified already
+# by default the lookup functions finds all varnames containing the string, therefore
+# we add ^ and $ to denote start and end of string, so this returns only exact matches
+- name: Set OS dependent variables, if not already defined by user # noqa var-naming
+  ansible.builtin.set_fact:
+    "{{ item.key }}": "{{ item.value }}"
+  when: not lookup('varnames', '^' + item.key + '$')
+  with_dict: "{{ os_vars }}"
+  tags: always
+
+# ensure that its not possible to logout the siste by brute force
+- name: Disable CTRL-ALT-DEL
+  become: true
+  ansible.builtin.systemd:
+    name: ctrl-alt-del.target
+    masked: true
+    daemon_reload: true
+  when: ansible_service_mgr == "systemd"
+
+- name: Remove deprecated or insecure packages | package-01 - package-09
+  ansible.builtin.apt:
+    name: "{{ os_security_packages_list }}"
+    state: absent
+    purge: true
+
+- name: Limit access to home directories of regular (non-system, non-root) accounts
+  ansible.builtin.file:
+    mode: "0700"
+    owner: "{{ item }}"
+    path: "{{ getent_passwd[item][4] }}"
+    state: directory
+  loop: "{{ regular_users }}"
+  when:
+    - os_chmod_home_folders | bool
+    - regular_users is defined and (regular_users | length > 0)
+    - item not in os_ignore_home_folder_users | default([])
+
+# see https://github.com/dev-sec/ansible-collection-hardening/issues/763
+- name: Change Debian/Ubuntu systems so ssh starts traditionally instead of socket-activated
+  ansible.builtin.include_tasks: disable-systemd-socket.yml
+  when:
+    - (ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version is version('22.04', '>=')) or
+      (ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version is version('12', '>='))
+
+- name: Ensure privilege separation directory exists
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - ansible_facts.os_family == 'Debian'
+
+- name: Include selinux specific tasks
+  ansible.builtin.include_tasks: selinux.yml
+
+- name: Get openssh-version
+  ansible.builtin.command: ssh -V
+  register: sshd_version_raw
+  changed_when: false
+  check_mode: false
+
+- name: Parse openssh-version
+  ansible.builtin.set_fact:
+    sshd_version: "{{ sshd_version_raw.stderr | regex_replace('.*_([0-9]*.[0-9]).*', '\\1') }}"
+
+- name: Create sshd_config and set permissions to root/600
+  ansible.builtin.template:
+    src: opensshd.conf.j2
+    dest: "{{ ssh_server_config_file }}"
+    mode: "0600"
+    owner: "{{ ssh_owner }}"
+    group: "{{ ssh_group }}"
+    validate: "{{ sshd_path }} -T -C user=root -C host=localhost -C addr=localhost -C lport=22 -f %s"
+  notify: Restart sshd

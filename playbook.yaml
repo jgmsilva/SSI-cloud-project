@@ -8,13 +8,10 @@
       become: true
       ansible.builtin.apt:
         name: "acl"
-        update_cache: yes
-       
 
-- hosts: client
+- hosts: server
   roles:
-    - server
-    - postgres
+    - hardening
 
 - hosts: audit
   roles:

@@ -1,11 +1,11 @@
-variable "clientvm_object" {
+variable "servervm_object" {
   type = map(object({
-    name = string
-    tags = list(string)
+    name         = string
+    tags         = list(string)
     ipv4_address = string
-    memory = number
-    cpu_cores = number
-    disk_size = number
+    memory       = number
+    cpu_cores    = number
+    disk_size    = number
   }))
 }
 
