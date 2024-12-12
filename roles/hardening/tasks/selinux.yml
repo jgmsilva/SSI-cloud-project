@@ -5,10 +5,10 @@
     name: "{{ ssh_selinux_packages }}"
     state: present
 
-- name: Start SELinux status
-  ansible.builtin.command:
-    cmd: selinux-activate
-  become: true
+# - name: Start SELinux status
+#   ansible.builtin.command:
+#     cmd: selinux-activate
+#   become: true
 
 - name: Configure selinux | selinux-01
   become: true
@@ -16,6 +16,25 @@
     policy: "{{ os_selinux_policy }}"
     state: "{{ os_selinux_state }}" # noqa args - see https://github.com/ansible/ansible-lint/issues/2930
 
+- name: Persist SELinux configuration in /etc/selinux/config
+  become: true
+  lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX={{ os_selinux_state }}'
+
+- name: Enable SELinux kernel parameters
+  become: true
+  blockinfile:
+    path: /etc/default/grub
+    marker: "# {mark} ANSIBLE MANAGED SELINUX"
+    block: |
+      GRUB_CMDLINE_LINUX="security=selinux selinux=1"
+
+- name: Update GRUB configuration
+  become: true
+  command: update-grub
+  when: ansible_facts['os_family'] == 'Debian'
 # - name: Ensure SELinux is enabled in GRUB
 #   ansible.builtin.replace:
 #     path: /etc/default/grub
