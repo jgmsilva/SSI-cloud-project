@@ -10,7 +10,7 @@ os_chmod_home_folders: true
 os_ignore_home_folder_users: []
 
 # Set the SELinux state, which can be either disabled, permissive, or enforcing.
-os_selinux_state: enforcing
+os_selinux_state: permissive
 # Set the SELinux polixy.
 os_selinux_policy: default
 

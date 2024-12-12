@@ -9,7 +9,7 @@ ssh_host_keys_group: root
 ssh_host_keys_mode: "0600"
 ssh_selinux_packages:
   - auditd
-  # - selinux-basics
+  - selinux-basics
   - selinux-policy-default
   - policycoreutils-python-utils
   - checkpolicy

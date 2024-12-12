@@ -50,7 +50,10 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   content_type = "iso"
   datastore_id = "local"
   node_name    = var.proxmox_nodename
-  url          = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+  # url          = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-latest.x86_64.qcow2"
+  # url       = "https://cloud.debian.org/images/cloud/bookworm/20230612-1409/debian-12-genericcloud-amd64-20230612-1409.qcow2"
+  # file_name = "debian12.img"
+  url = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 }
 
 resource "tls_private_key" "ubuntu_vm_key" {

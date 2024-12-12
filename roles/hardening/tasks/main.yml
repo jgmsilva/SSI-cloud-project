@@ -49,6 +49,9 @@
     - regular_users is defined and (regular_users | length > 0)
     - item not in os_ignore_home_folder_users | default([])
 
+- name: Include selinux specific tasks
+  ansible.builtin.include_tasks: selinux.yml
+
 # see https://github.com/dev-sec/ansible-collection-hardening/issues/763
 - name: Change Debian/Ubuntu systems so ssh starts traditionally instead of socket-activated
   ansible.builtin.include_tasks: disable-systemd-socket.yml
@@ -65,9 +68,6 @@
     mode: "0755"
   when:
     - ansible_facts.os_family == 'Debian'
-
-- name: Include selinux specific tasks
-  ansible.builtin.include_tasks: selinux.yml
 
 - name: Get openssh-version
   ansible.builtin.command: ssh -V
