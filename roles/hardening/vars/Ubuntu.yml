@@ -8,11 +8,11 @@ ssh_host_keys_owner: root
 ssh_host_keys_group: root
 ssh_host_keys_mode: "0600"
 ssh_selinux_packages:
-  - auditd
-  # - selinux-basics
-  - selinux-policy-default
-  - policycoreutils-python-utils
-  - checkpolicy
+  # - auditd
+  - selinux-basics
+  # - selinux-policy-default
+  # - policycoreutils-python-utils
+  # - checkpolicy
 
 sshd_moduli_file: /etc/ssh/moduli
 

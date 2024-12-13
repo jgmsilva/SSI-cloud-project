@@ -22,6 +22,9 @@
   with_dict: "{{ os_vars }}"
   tags: always
 
+- name: Include selinux specific tasks
+  ansible.builtin.include_tasks: selinux.yml
+
 # ensure that its not possible to logout the siste by brute force
 - name: Disable CTRL-ALT-DEL
   become: true
@@ -48,9 +51,6 @@
     - os_chmod_home_folders | bool
     - regular_users is defined and (regular_users | length > 0)
     - item not in os_ignore_home_folder_users | default([])
-
-- name: Include selinux specific tasks
-  ansible.builtin.include_tasks: selinux.yml
 
 # see https://github.com/dev-sec/ansible-collection-hardening/issues/763
 - name: Change Debian/Ubuntu systems so ssh starts traditionally instead of socket-activated
@@ -80,6 +80,7 @@
     sshd_version: "{{ sshd_version_raw.stderr | regex_replace('.*_([0-9]*.[0-9]).*', '\\1') }}"
 
 - name: Create sshd_config and set permissions to root/600
+  become: true
   ansible.builtin.template:
     src: opensshd.conf.j2
     dest: "{{ ssh_server_config_file }}"

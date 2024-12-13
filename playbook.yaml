@@ -4,17 +4,11 @@
     - name: Ping my hosts
       ansible.builtin.ping:
 
-    - name: Remove apparmor
-      become: true
-      ansible.builtin.apt:
-        name: "apparmor"
-        state: absent
-        purge: true
-
     - name: Install basics packages
       become: true
       ansible.builtin.apt:
-        name: ["linux-generic", "acl", "selinux-basics", "selinux-utils"]
+        name: ["acl"]
+      delay: 15
 
 - hosts: server
   roles:

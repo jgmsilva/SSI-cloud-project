@@ -5,13 +5,6 @@
 # This is the sshd server system-wide configuration file.
 # See sshd_config(5) for more information.
 
-{% if sshd_custom_options %}
-# Custom configuration that overwrites default configuration
-# ==========================================================
-{% for line in sshd_custom_options %}
-{{ line }}
-{% endfor %}
-{% endif %}
 
 # Basic configuration
 # ===================
@@ -133,11 +126,9 @@ IgnoreRhosts yes
 IgnoreUserKnownHosts yes
 HostbasedAuthentication no
 
-{% if ssh_pam_support %}
 # Enable PAM to enforce system wide rules.
-UsePAM {{ 'yes' if (ssh_use_pam|bool) else 'no' }}
+UsePAM no
 
-{% endif %}
 {# Set AuthenticationMethods per default to publickey -#}
 {# AuthenticationMethods was introduced in OpenSSH 6.2 - https://www.openssh.com/txt/release-6.2 -#}
 {% if sshd_version is version('6.2', '>=') %}
@@ -145,22 +136,14 @@ AuthenticationMethods {{ sshd_authenticationmethods }}
 
 {% endif %}
 # Disable password-based authentication, it can allow for potentially easier brute-force attacks.
-PasswordAuthentication {{ 'yes' if (ssh_server_password_login|bool) else 'no' }}
+PasswordAuthentication no
 PermitEmptyPasswords no
 ChallengeResponseAuthentication {{ 'yes' if (ssh_challengeresponseauthentication|bool) else 'no' }}
-
-{% if ssh_kerberos_support %}
-# Only enable Kerberos authentication if it is configured.
-KerberosAuthentication no
-KerberosOrLocalPasswd no
-KerberosTicketCleanup yes
-#KerberosGetAFSToken no
-{% endif %}
 
 {# OpenBSD does not support GSSAPIAuthentication, so leave this out if on OpenBSD #}
 {% if ansible_facts.os_family != 'OpenBSD' -%}
 # Only enable GSSAPI authentication if it is configured.
-GSSAPIAuthentication {{ 'yes' if ssh_gssapi_support else 'no' }}
+GSSAPIAuthentication no
 GSSAPICleanupCredentials yes
 
 {% endif %}

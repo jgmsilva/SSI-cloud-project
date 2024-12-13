@@ -6,5 +6,8 @@
   when: ssh_server_enabled | bool
   become: true
 
-- name: Reboot server
-  command: systemctl reboot
+- name: Reboot the system
+  ansible.builtin.reboot:
+    msg: "Rebooting to apply SELinux changes"
+    reboot_timeout: 300
+  become: true

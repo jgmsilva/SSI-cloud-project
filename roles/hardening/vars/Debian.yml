@@ -8,11 +8,18 @@ ssh_host_keys_owner: root
 ssh_host_keys_group: root
 ssh_host_keys_mode: "0600"
 ssh_selinux_packages:
-  - auditd
+  # - auditd
+  # - selinux-utils
   - selinux-basics
-  - selinux-policy-default
-  - policycoreutils-python-utils
-  - checkpolicy
+  # - selinux-policy-default
+  # - policycoreutils-python-utils
+  # - checkpolicy
+
+# true if SSH support Kerberos
+ssh_kerberos_support: false
+
+# true if SSH has PAM support
+ssh_pam_support: true
 
 sshd_moduli_file: /etc/ssh/moduli
 

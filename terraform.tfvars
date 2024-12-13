@@ -7,7 +7,7 @@ servervm_object = {
     name         = "vm1"
     tags         = ["web-server"]
     ipv4_address = "192.168.122.245"
-    memory       = 512
+    memory       = 1024
     cpu_cores    = 1
     disk_size    = 20
   }

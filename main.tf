@@ -15,8 +15,11 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
 
     user_account {
       username = "ansible"
+      password = "password"
       keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
+
     }
+    # user_data_file_id = proxmox_virtual_environment_file.user_data_cloud_config.id
   }
   stop_on_destroy = true
 
@@ -28,6 +31,8 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
     discard      = "on"
     file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
   }
+
+
 
   cpu {
     cores = each.value.cpu_cores
@@ -51,9 +56,9 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
   datastore_id = "local"
   node_name    = var.proxmox_nodename
   # url          = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-latest.x86_64.qcow2"
-  # url       = "https://cloud.debian.org/images/cloud/bookworm/20230612-1409/debian-12-genericcloud-amd64-20230612-1409.qcow2"
-  # file_name = "debian12.img"
-  url = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+  url       = "https://cloud.debian.org/images/cloud/bookworm/20230612-1409/debian-12-genericcloud-amd64-20230612-1409.qcow2"
+  file_name = "debian12.img"
+  # url = "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 }
 
 resource "tls_private_key" "ubuntu_vm_key" {
@@ -88,4 +93,38 @@ resource "local_file" "known_hosts" {
   filename        = "./terraform_known_hosts"
   content         = ""
   file_permission = "0666"
+}
+
+resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
+  content_type = "snippets"
+  datastore_id = "local"
+  node_name    = "pve"
+
+  source_raw {
+    data = <<-EOF
+    #cloud-config
+    hostname: vm1
+    users:
+      - default
+      - name: ansible
+        groups:
+          - sudo
+        shell: /bin/bash
+        ssh_authorized_keys:
+          - ${trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)}
+        sudo: ALL=(ALL) NOPASSWD:ALL
+    write_files:
+      - path: /etc/fstab
+        content: |
+          LABEL=cloudimg-rootfs   /    ext4   defaults    0 1
+    runcmd:
+      - "mkfs.ext4 /dev/vda1"
+      - "mkdir -p /mnt/data"
+      - "mount /dev/vda1 /mnt/data"
+      - "echo '/dev/vda1 /mnt/data ext4 defaults 0 1' >> /etc/fstab"
+      - apt update
+    EOF
+
+    file_name = "user-data-cloud-config.yaml"
+  }
 }
