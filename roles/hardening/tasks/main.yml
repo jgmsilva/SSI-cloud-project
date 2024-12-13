@@ -22,8 +22,15 @@
   with_dict: "{{ os_vars }}"
   tags: always
 
+- name: Check SELinux status
+  become: true
+  ansible.builtin.command: getenforce
+  register: selinux_status
+  ignore_errors: true
+
 - name: Include selinux specific tasks
   ansible.builtin.include_tasks: selinux.yml
+  when: selinux_status.stdout != "Enforcing"
 
 # ensure that its not possible to logout the siste by brute force
 - name: Disable CTRL-ALT-DEL

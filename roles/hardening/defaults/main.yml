@@ -73,7 +73,7 @@ ssh_login_grace_time: 30s
 
 # Specifies the maximum number of authentication attempts permitted per connection.
 # Once the number of failures reaches half this value, additional failures are logged.
-ssh_max_auth_retries: 2
+ssh_max_auth_retries: 10
 
 # Specifies the maximum number of open sessions permitted from a given connection
 ssh_max_sessions: 10
