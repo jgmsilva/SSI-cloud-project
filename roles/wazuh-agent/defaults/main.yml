@@ -1,0 +1,18 @@
+wazuh_repo:
+  keyring_path: '/usr/share/keyrings/wazuh.gpg'
+  apt: 'deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main'
+  gpg: 'https://packages.wazuh.com/key/GPG-KEY-WAZUH'
+  path: '/tmp/WAZUH-GPG-KEY'
+
+wazuh_dir: "/var/ossec"
+
+wazuh_manager_config:
+  port: 1514
+  protocol: tcp
+  api_port: 55000
+  api_proto: 'https'
+  api_user: wazuh
+  max_retries: 5
+  retry_interval: 5
+
+wazuh_managers: []
