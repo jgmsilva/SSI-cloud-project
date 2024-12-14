@@ -1,0 +1,177 @@
+- name: Remove performance analyzer plugin from Wazuh indexer
+  become: true
+  command: ./opensearch-plugin remove opensearch-performance-analyzer
+  ignore_errors: true
+  args:
+    chdir: /usr/share/wazuh-indexer/bin/
+  register: remove_opensearch_performance_analyzer
+  failed_when:
+    - remove_opensearch_performance_analyzer.rc != 0
+    - '"not found" not in remove_opensearch_performance_analyzer.stderr'
+  changed_when: "remove_opensearch_performance_analyzer.rc == 0"
+
+- name: Remove Opensearch configuration file
+  file:
+    path: "{{ indexer_conf_path }}/opensearch.yml"
+    state: absent
+  tags: install
+
+- name: Copy Opensearch Configuration File
+  template:
+    src: "templates/opensearch.yml.j2"
+    dest: "{{ indexer_conf_path }}/opensearch.yml"
+    owner: root
+    group: wazuh-indexer
+    mode: 0640
+    force: yes
+  tags: install
+
+- name: Configure IP
+  set_fact:
+    target_address: "{{ indexer_network_host }}"
+
+- name: Ensure Indexer certificates directory permissions.
+  file:
+    path: "{{ indexer_conf_path }}/certs/"
+    state: directory
+    owner: wazuh-indexer
+    group: wazuh-indexer
+    mode: 500
+
+- name: Copy the node & admin certificates to Wazuh indexer cluster
+  copy:
+    src: "{{ local_certs_path }}/wazuh-certificates/{{ item }}"
+    dest: "{{ indexer_conf_path }}/certs/"
+    owner: wazuh-indexer
+    group: wazuh-indexer
+    mode: 0400
+  with_items:
+    - root-ca.pem
+    - root-ca.key
+    - "{{ indexer_node_name }}-key.pem"
+    - "{{ indexer_node_name }}.pem"
+    - admin-key.pem
+    - admin.pem
+
+- name: Restart Wazuh indexer with security configuration
+  systemd:
+    name: wazuh-indexer
+    state: restarted
+
+- name: Copy the Opensearch security internal users template
+  template:
+    src: "templates/internal_users.yml.j2"
+    dest: "{{ indexer_sec_plugin_conf_path }}/internal_users.yml"
+    mode: 0644
+  run_once: true
+
+- block:
+  - name: Hashing the custom admin password
+    shell: |
+      export JAVA_HOME=/usr/share/wazuh-indexer/jdk
+      {{ indexer_sec_plugin_tools_path }}/hash.sh -p '{{ indexer_admin_password }}'
+    register: indexer_admin_password_hashed
+    no_log: '{{ indexer_nolog_sensible | bool }}'
+
+  - name: Set the Admin user password
+    replace:
+      path: "{{ indexer_sec_plugin_conf_path }}/internal_users.yml"
+      regexp: '(?<=admin:\n  hash: )(.*)(?=)'
+      replace: "{{ indexer_password_hash | quote }}"
+    vars:
+      indexer_password_hash: "{{ indexer_admin_password_hashed.stdout_lines | last }}"
+
+  # this can also be achieved with password_hash, but it requires dependencies on the controller
+  - name: Hash the kibanaserver role/user pasword
+    shell: |
+      export JAVA_HOME=/usr/share/wazuh-indexer/jdk
+      {{ indexer_sec_plugin_tools_path }}/hash.sh -p '{{ dashboard_password }}'
+    register: indexer_kibanaserver_password_hashed
+    no_log: '{{ indexer_nolog_sensible | bool }}'
+
+  - name: Set the kibanaserver user password
+    replace:
+      path: "{{ indexer_sec_plugin_conf_path }}/internal_users.yml"
+      regexp: '(?<=kibanaserver:\n  hash: )(.*)(?=)'
+      replace: "{{ indexer_password_hash | quote }}"
+    vars:
+      indexer_password_hash: "{{ indexer_kibanaserver_password_hashed.stdout_lines | last }}"
+
+  - name: Initialize the Opensearch security index in Wazuh indexer
+    command: >
+      sudo -u wazuh-indexer OPENSEARCH_PATH_CONF={{ indexer_conf_path }}
+      JAVA_HOME=/usr/share/wazuh-indexer/jdk
+      {{ indexer_sec_plugin_tools_path }}/securityadmin.sh
+      -cd {{ indexer_sec_plugin_conf_path }}/
+      -icl -p 9200 -cd {{ indexer_sec_plugin_conf_path }}/
+      -nhnv
+      -cacert {{ indexer_conf_path }}/certs/root-ca.pem
+      -cert {{ indexer_conf_path }}/certs/admin.pem
+      -key {{ indexer_conf_path }}/certs/admin-key.pem
+      -h {{ target_address }}
+    retries: 2
+    delay: 5
+    register: result
+    until: result.rc == 0
+
+  when: inventory_hostname == ansible_play_hosts[0]
+
+- name: Configure Wazuh indexer JVM memmory.
+  template:
+    src: "templates/jvm.options.j2"
+    dest: "{{ indexer_conf_path }}/jvm.options"
+    owner: root
+    group: wazuh-indexer
+    mode: 0644
+    force: yes
+  notify: restart wazuh-indexer
+  tags: install
+
+- name: Ensure extra time for Wazuh indexer to start on reboots
+  lineinfile:
+    path: /usr/lib/systemd/system/wazuh-indexer.service
+    regexp: '^TimeoutStartSec='
+    line: "TimeoutStartSec={{ indexer_start_timeout }}"
+  become: yes
+  tags: configure
+
+- name: Index files to remove
+  find:
+    paths: "{{ indexer_index_path }}"
+    patterns: "*"
+  register: files_to_delete
+
+- name: Remove Index Files
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items: "{{ files_to_delete.files }}"
+
+- name: Ensure Wazuh indexer started and enabled
+  service:
+    name: wazuh-indexer
+    enabled: true
+    state: started
+
+- name: Wait for Wazuh indexer API
+  uri:
+    url: "https://{{ indexer_network_host }}:{{ indexer_http_port }}/_cat/health/"
+    user: "admin" # Default Indexer user is always "admin"
+    password: "{{ indexer_admin_password }}"
+    validate_certs: no
+    status_code: 200,401
+    return_content: yes
+    timeout: 4
+  register: _result
+  until:
+    - _result is defined
+    - '"yellow" in _result.content or "green" in _result.content'
+  retries: 24
+  delay: 5
+  tags: debug
+
+- name: Reload systemd configuration
+  systemd:
+    daemon_reload: true
+  become: yes
+  notify: restart wazuh-indexer

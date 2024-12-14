@@ -1,0 +1,77 @@
+- name: Checking if Filebeat Module folder file exists
+  stat:
+    path: "{{ filebeat_module_folder }}"
+  register: filebeat_module_folder_info
+
+- name: Download Filebeat module package
+  get_url:
+    url: "{{ filebeat_module_package_url }}/{{ filebeat_module_package_name }}"
+    dest: "{{ filebeat_module_package_path }}"
+  when: not filebeat_module_folder_info.stat.exists
+
+- name: Unpack Filebeat module package
+  unarchive:
+    src: "{{ filebeat_module_package_path }}/{{ filebeat_module_package_name }}"
+    dest: "{{ filebeat_module_destination }}"
+    remote_src: yes
+  when: not filebeat_module_folder_info.stat.exists
+
+- name: Setting 0755 permission for Filebeat module folder
+  file: dest={{ filebeat_module_folder }} mode=u=rwX,g=rwX,o=rwX recurse=yes
+  when: not filebeat_module_folder_info.stat.exists
+
+- name: Checking if Filebeat Module package file exists
+  stat:
+    path: "{{ filebeat_module_package_path }}/{{ filebeat_module_package_name }}"
+  register: filebeat_module_package
+  when: filebeat_module_package is not defined
+
+- name: Delete Filebeat module package file
+  file:
+    state: absent
+    path: "{{ filebeat_module_package_path }}/{{ filebeat_module_package_name }}"
+  when: filebeat_module_package.stat.exists
+
+- name: Copy Filebeat configuration.
+  template:
+    src: filebeat.yml.j2
+    dest: "/etc/filebeat/filebeat.yml"
+    owner: root
+    group: root
+    mode: 0400
+  notify: restart filebeat
+
+- name: Fetch latest Wazuh alerts template
+  get_url:
+    url: https://raw.githubusercontent.com/wazuh/wazuh/{{ wazuh_template_branch }}/extensions/elasticsearch/7.x/wazuh-template.json
+    dest: "/etc/filebeat/wazuh-template.json"
+    owner: root
+    group: root
+    mode: 0400
+  notify: restart filebeat
+
+- name: Ensure Filebeat SSL key pair directory exists.
+  file:
+    path: "{{ filebeat_ssl_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 500
+
+- name: Copy the certificates from local to the Manager instance
+  copy:
+    src: "{{ local_certs_path }}/wazuh-certificates/{{ item }}"
+    dest: "{{ filebeat_ssl_dir }}"
+    owner: root
+    group: root
+    mode: 400
+  with_items:
+    - "{{ indexer_node_name }}-key.pem"
+    - "{{ indexer_node_name }}.pem"
+    - "root-ca.pem"
+
+- name: Ensure Filebeat is started and enabled at boot.
+  service:
+    name: filebeat
+    state: started
+    enabled: true

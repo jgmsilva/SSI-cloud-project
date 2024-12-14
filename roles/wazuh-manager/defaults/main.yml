@@ -1,0 +1,60 @@
+wazuh_repo:
+  keyring_path: '/usr/share/keyrings/wazuh.gpg'
+  apt: 'deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main'
+  gpg: 'https://packages.wazuh.com/key/GPG-KEY-WAZUH'
+  path: '/tmp/WAZUH-GPG-KEY'
+
+local_certs_path: "{{ playbook_dir }}/keys/certificates"
+certs_gen_tool_url: "https://packages.wazuh.com/4.9/wazuh-certs-tool.sh"
+
+
+indexer_cluster_name: wazuh
+indexer_network_host: '127.0.0.1'
+indexer_http_port: 9200
+indexer_conf_path: /etc/wazuh-indexer
+indexer_sec_plugin_conf_path: /etc/wazuh-indexer/opensearch-security
+indexer_sec_plugin_tools_path: /usr/share/wazuh-indexer/plugins/opensearch-security/tools
+indexer_index_path: /var/lib/wazuh-indexer/
+indexer_node_name: node-1
+indexer_admin_user: admin
+indexer_admin_password: admin
+indexer_start_timeout: 90
+indexer_cluster_nodes:
+  - 127.0.0.1
+indexer_discovery_nodes:
+  - 127.0.0.1
+
+wazuh_template_branch: v4.9.2
+filebeat_module_package_url: "https://packages.wazuh.com/4.x/filebeat"
+filebeat_ssl_dir: /etc/pki/filebeat
+filebeat_module_package_name: wazuh-filebeat-0.4.tar.gz
+filebeat_module_package_path: /tmp/
+filebeat_module_destination: /usr/share/filebeat/module
+filebeat_module_folder: /usr/share/filebeat/module/wazuh
+filebeat_output_indexer_hosts:
+  - "localhost"
+filebeat_output_indexer_port: 9200
+filebeat_node_name: node-1
+
+wazuh_dir: "/var/ossec"
+rules_path: 'custom_ruleset/rules/'
+decoders_path: 'custom_ruleset/decoders/'
+
+
+wazuh_api_credentials:
+  - id: "default"
+    url: "https://127.0.0.1"
+    port: 55000
+    username: "wazuh-wui"
+    password: "wazuh-wui"
+
+dashboard_security: true
+dashboard_node_name: node-1
+dashboard_conf_path: /etc/wazuh-dashboard/
+dashboard_server_host: "0.0.0.0"
+dashboard_server_port: "443"
+dashboard_server_name: "dashboard"
+dashboard_password: admin
+
+indexer_jvm_xms: null
+indexer_nolog_sensible: true

@@ -1,0 +1,20 @@
+---
+- name: restart wazuh-indexer
+  service:
+    name: wazuh-indexer
+    state: restarted
+
+- name: restart wazuh-manager
+  service:
+    name: wazuh-manager
+    state: restarted
+
+- name: restart filebeat
+  service:
+    name: filebeat
+    state: restarted
+
+- name: restart wazuh-dashboard
+  service:
+    name: wazuh-dashboard
+    state: restarted

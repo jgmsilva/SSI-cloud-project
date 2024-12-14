@@ -1,0 +1,131 @@
+- name: Generate the wazuh-keystore (username)
+  shell: >
+    /var/ossec/bin/wazuh-keystore -f indexer -k username -v {{ indexer_admin_user }}
+  notify: restart wazuh-manager
+
+- name: Generate the wazuh-keystore (password)
+  shell: >
+    /var/ossec/bin/wazuh-keystore -f indexer -k password -v {{ indexer_admin_password }}
+  notify: restart wazuh-manager
+
+- name: Install expect
+  package:
+    name: expect
+    state: present
+  when:
+    - not (ansible_os_family|lower == "redhat" and ansible_distribution_major_version|int < 6) and
+      not (ansible_distribution|lower == "centos" and ansible_distribution_major_version|int == 8)
+  tags: init
+
+- name: Verifying for old init authd service
+  stat: path=/etc/init.d/ossec-authd
+  register: old_authd_service
+  tags:
+    - config
+
+- name: Verifying for old systemd authd service
+  stat: path=/lib/systemd/system/ossec-authd.service
+  register: old_authd_service
+  tags:
+    - config
+
+- name: Ensure ossec-authd service is disabled
+  service: name=ossec-authd enabled=no state=stopped
+  when: old_authd_service.stat.exists
+  tags:
+    - config
+
+- name: Removing old init authd services
+  file: path="{{ item }}" state=absent
+  with_items:
+    - "/etc/init.d/ossec-authd"
+    - "/lib/systemd/system/ossec-authd.service"
+  when: old_authd_service.stat.exists
+  tags:
+    - config
+
+- name: Installing the local_rules.xml (default local_rules.xml)
+  template: src=var-ossec-rules-local_rules.xml.j2
+            dest="{{ wazuh_dir }}/etc/rules/local_rules.xml"
+            owner=wazuh
+            group=wazuh
+            mode=0660
+  notify: restart wazuh-manager
+
+- name: Adding local rules files
+  copy: src="{{ rules_path }}"
+        dest="{{ wazuh_dir }}/etc/rules/"
+        owner=wazuh
+        group=wazuh
+        mode=0660
+  notify: restart wazuh-manager
+
+- name: Installing the local_decoder.xml
+  template: src=var-ossec-rules-local_decoder.xml.j2
+            dest="{{ wazuh_dir }}/etc/decoders/local_decoder.xml"
+            owner=wazuh
+            group=wazuh
+            mode=0660
+  notify: restart wazuh-manager
+
+- name: Adding local decoders files
+  copy: src="{{ decoders_path }}"
+        dest="{{ wazuh_dir }}/etc/decoders/"
+        owner=wazuh
+        group=wazuh
+        mode=0660
+  notify: restart wazuh-manager
+
+- name: Installing the local_internal_options.conf
+  template: src=var-ossec-etc-local-internal-options.conf.j2
+            dest="{{ wazuh_dir }}/etc/local_internal_options.conf"
+            owner=root
+            group=wazuh
+            mode=0640
+  notify: restart wazuh-manager
+
+- name: Check if client-syslog is enabled
+  shell: |
+    set -o pipefail
+    "grep -c 'ossec-csyslogd' {{ wazuh_dir }}/bin/.process_list | xargs echo"
+  args:
+    removes: "{{ wazuh_dir }}/bin/.process_list"
+    executable: /bin/bash
+  changed_when: false
+  check_mode: false
+  register: csyslog_enabled
+
+- name: Check if ossec-agentlessd is enabled
+  shell: |
+    set -o pipefail
+    "grep -c 'ossec-agentlessd' {{ wazuh_dir }}/bin/.process_list | xargs echo"
+  args:
+    removes: "{{ wazuh_dir }}/bin/.process_list"
+    executable: /bin/bash
+  changed_when: false
+  check_mode: false
+  register: agentlessd_enabled
+  tags:
+    - config
+- name: Load wazuh_manager_config
+  include_vars:
+    file: ../defaults/wazuh_manager_config.yml
+
+- name: Debug wazuh_manager_config
+  debug:
+    var: wazuh_manager_config
+
+- name: Configure ossec.conf
+  template:
+    src: var-ossec-etc-ossec-server.conf.j2
+    dest: "{{ wazuh_dir }}/etc/ossec.conf"
+    owner: root
+    group: wazuh
+    mode: 0644
+  notify: restart wazuh-manager
+
+- name: Ensure Wazuh Manager service is started and enabled.
+  service:
+    name: "wazuh-manager"
+    enabled: true
+    state: started
