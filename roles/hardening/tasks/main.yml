@@ -96,3 +96,42 @@
     group: "{{ ssh_group }}"
     validate: "{{ sshd_path }} -T -C user=root -C host=localhost -C addr=localhost -C lport=22 -f %s"
   notify: Restart sshd
+
+## OS HARDENING SYSCTL - KERNEL CONFIGURATION
+- name: Protect sysctl.conf
+  ansible.builtin.file:
+    path: /etc/sysctl.conf
+    owner: root
+    group: root
+    mode: "0440"
+    state: touch
+    modification_time: preserve
+    access_time: preserve
+
+- name: Set Daemon umask, do config for rhel-family | NSA 2.2.4.1
+  ansible.builtin.template:
+    src: etc/sysconfig/rhel_sysconfig_init.j2
+    dest: /etc/sysconfig/init
+    owner: root
+    group: root
+    mode: "0544"
+  when: ansible_facts.os_family == 'RedHat'
+
+- name: Change sysctls
+  when: ansible_virtualization_type not in ['docker', 'lxc', 'openvz']
+  block:
+    - name: Change various sysctl-settings, look at the sysctl-vars file for documentation
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+        ignoreerrors: true
+      with_dict: "{{ sysctl_config }}"
+      when: item.key not in sysctl_unsupported_entries | default()
+
+- name: Import tasks to configure modules
+  ansible.builtin.import_tasks: modprobe.yml
+  tags: modprobe
+  when: os_modprobe_enabled | bool
