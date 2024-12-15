@@ -138,7 +138,7 @@ ssh_deny_groups: "" # sshd
 ssh_allow_groups: "" # sshd
 
 # change default file that contains the public keys that can be used for user authentication.
-ssh_authorized_keys_file: "" # sshd
+ssh_authorized_keys_file: ".ssh/authorized_keys" # sshd
 
 # specifies the file containing trusted certificate authorities public keys used to sign user certificates.
 ssh_trusted_user_ca_keys_file: "" # sshd
