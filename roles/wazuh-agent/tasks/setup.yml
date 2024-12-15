@@ -1,0 +1,55 @@
+---
+- name: Install Wazuh agent dependancies
+  apt:
+    name:
+      - ca-certificates
+      - gnupg
+      - apt-transport-https
+      - acl
+    state: present
+
+- name: Installing Wazuh repository key
+  become: true
+  shell: |
+    set -o pipefail
+    curl -s {{ wazuh_repo.gpg }} | apt-key add -
+  args:
+    # warn: false
+    executable: /bin/bash
+  changed_when: false
+  when:
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_major_version | int == 14
+
+- name: Download Wazuh repository key
+  get_url:
+    url: "{{ wazuh_repo.gpg }}"
+    dest: "{{ wazuh_repo.path }}"
+  when:
+    - not (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int == 14)
+
+- name: Import Wazuh GPG key
+  command: "gpg --no-default-keyring --keyring gnupg-ring:{{ wazuh_repo.keyring_path }} --import {{ wazuh_repo.path }}"
+  when:
+    - not (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int == 14)
+  args:
+    creates: "{{ wazuh_repo.keyring_path }}"
+
+- name: Set permissions for Wazuh GPG key
+  file:
+    path: "{{ wazuh_repo.keyring_path }}"
+    mode: '0644'
+  when:
+    - not (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int == 14)
+
+- name: Add Wazuh repositories
+  apt_repository:
+    filename: wazuh_repo
+    repo: "{{ wazuh_repo.apt }}"
+    state: present
+    update_cache: true
+
+- name: Set Distribution CIS filename for debian
+  set_fact:
+    cis_distribution_filename: cis_debian_linux_rcl.txt
+  when: ansible_os_family == "Debian"

@@ -1,0 +1,9 @@
+- import_tasks: certificates.yml
+- import_tasks: setup.yml
+
+- import_tasks: install.yml
+
+- import_tasks: configure_indexer.yml
+- import_tasks: configure_manager.yml
+- import_tasks: configure_filebeat.yml
+- import_tasks: configure_dashboard.yml

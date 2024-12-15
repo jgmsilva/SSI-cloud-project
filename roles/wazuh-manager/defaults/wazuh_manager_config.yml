@@ -1,0 +1,292 @@
+wazuh_manager_config:
+  repo:
+    keyring_path: '/usr/share/keyrings/wazuh.gpg'
+    apt: 'deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/5.x/apt/ stable main'
+    yum: 'https://packages.wazuh.com/5.x/yum/'
+    gpg: 'https://packages.wazuh.com/key/GPG-KEY-WAZUH'
+    path: '/tmp/WAZUH-GPG-KEY'
+  json_output: 'yes'
+  alerts_log: 'yes'
+  logall: 'no'
+  logall_json: 'no'
+  log_format: 'plain'
+  api:
+    bind_addr: 0.0.0.0
+    port: 55000
+    behind_proxy_server: no
+    https: yes
+    https_key: "api/configuration/ssl/server.key"
+    https_cert: "api/configuration/ssl/server.crt"
+    https_use_ca: False
+    https_ca: "api/configuration/ssl/ca.crt"
+    logging_level: "info"
+    logging_path: "logs/api.log"
+    cors: no
+    cors_source_route: "*"
+    cors_expose_headers: "*"
+    cors_allow_headers: "*"
+    cors_allow_credentials: no
+    cache: yes
+    cache_time: 0.750
+    access_max_login_attempts: 5
+    access_block_time: 300
+    access_max_request_per_minute: 300
+    drop_privileges: yes
+    experimental_features: no
+    remote_commands_localfile: yes
+    remote_commands_localfile_exceptions: []
+    remote_commands_wodle: yes
+    remote_commands_wodle_exceptions: []
+  cluster:
+    disable: 'yes'
+    name: 'wazuh'
+    node_name: 'manager_01'
+    node_type: 'master'
+    key: 'ugdtAnd7Pi9myP7CVts4qZaZQEQcRYZa'
+    port: '1516'
+    bind_addr: '0.0.0.0'
+    nodes:
+      - 'manager'
+    hidden: 'no'
+  connection:
+    - type: 'secure'
+      port: '1514'
+      protocol: 'tcp'
+      queue_size: 131072
+  authd:
+    enable: true
+    port: 1515
+    use_source_ip: 'no'
+    force:
+      enabled: 'yes'
+      key_mismatch: 'yes'
+      disconnected_time: '1h'
+      after_registration_time: '1h'
+    purge: 'yes'
+    use_password: 'no'
+    ciphers: 'HIGH:!ADH:!EXP:!MD5:!RC4:!3DES:!CAMELLIA:@STRENGTH'
+    ssl_agent_ca: null
+    ssl_verify_host: 'no'
+    ssl_manager_cert: 'sslmanager.cert'
+    ssl_manager_key: 'sslmanager.key'
+    ssl_auto_negotiate: 'no'
+  email_notification: 'no'
+  mail_to:
+    - 'admin@example.net'
+  mail_smtp_server: smtp.example.wazuh.com
+  mail_from: wazuh@example.wazuh.com
+  mail_maxperhour: 12
+  mail_queue_size: 131072
+  email_log_source: 'alerts.log'
+  extra_emails:
+    - enable: false
+      mail_to: recipient@example.wazuh.com
+      format: full
+      level: 7
+      event_location: null
+      group: null
+      do_not_delay: false
+      do_not_group: false
+      rule_id: null
+  reports:
+    - enable: false
+      category: 'syscheck'
+      title: 'Daily report: File changes'
+      email_to: 'recipient@example.wazuh.com'
+      location: null
+      group: null
+      rule: null
+      level: null
+      srcip: null
+      user: null
+      showlogs: null
+  syscheck:
+    disable: 'no'
+    frequency: 43200
+    scan_on_start: 'yes'
+    auto_ignore: 'no'
+    ignore:
+      - /etc/mtab
+      - /etc/hosts.deny
+      - /etc/mail/statistics
+      - /etc/random-seed
+      - /etc/random.seed
+      - /etc/adjtime
+      - /etc/httpd/logs
+      - /etc/utmpx
+      - /etc/wtmpx
+      - /etc/cups/certs
+      - /etc/dumpdates
+      - /etc/svc/volatile
+    ignore_linux_type:
+      - '.log$|.swp$'
+    no_diff:
+      - /etc/ssl/private.key
+    directories:
+      - dirs: /etc,/usr/bin,/usr/sbin
+        checks: ''
+      - dirs: /bin,/sbin,/boot
+        checks: ''
+    auto_ignore_frequency:
+      frequency: 'frequency="10"'
+      timeframe: 'timeframe="3600"'
+      value: 'no'
+    skip_nfs: 'yes'
+    skip_dev: 'yes'
+    skip_proc: 'yes'
+    skip_sys: 'yes'
+    process_priority: 10
+    max_eps: 100
+    sync_enabled: 'yes'
+    sync_interval: '5m'
+    sync_max_interval: '1h'
+    sync_max_eps: 10
+  rootcheck:
+    frequency: 43200
+  openscap:
+    disable: 'yes'
+    timeout: 1800
+    interval: '1d'
+    scan_on_start: 'yes'
+  cis_cat:
+    disable: 'yes'
+    install_java: 'yes'
+    timeout: 1800
+    interval: '1d'
+    scan_on_start: 'yes'
+    java_path: '/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin'
+    ciscat_path: 'wodles/ciscat'
+  osquery:
+    disable: 'yes'
+    run_daemon: 'yes'
+    log_path: '/var/log/osquery/osqueryd.results.log'
+    config_path: '/etc/osquery/osquery.conf'
+    ad_labels: 'yes'
+  syscollector:
+    disable: 'no'
+    interval: '1h'
+    scan_on_start: 'yes'
+    hardware: 'yes'
+    os: 'yes'
+    network: 'yes'
+    packages: 'yes'
+    ports_no: 'yes'
+    processes: 'yes'
+  sca:
+    enabled: 'yes'
+    scan_on_start: 'yes'
+    interval: '12h'
+    skip_nfs: 'yes'
+    day: ''
+    wday: ''
+    time: ''
+  vulnerability_detection:
+    enabled: 'yes'
+    index_status: 'yes'
+    feed_update_interval: '60m'
+  indexer:
+    enabled: 'yes'
+    hosts: "{{ filebeat_output_indexer_hosts }}"
+  log_level: 3
+  email_level: 12
+  localfiles:
+    common:
+      - format: 'command'
+        command: df -P
+        frequency: '360'
+      - format: 'full_command'
+        command: netstat -tulpn | sed 's/\([[:alnum:]]\+\)\ \+[[:digit:]]\+\ \+[[:digit:]]\+\ \+\(.*\):\([[:digit:]]*\)\ \+\([0-9\.\:\*]\+\).\+\ \([[:digit:]]*\/[[:alnum:]\-]*\).*/\1 \2 == \3 == \4 \5/' | sort -k 4 -g | sed 's/ == \(.*\) ==/:\1/' | sed 1,2d
+        alias: 'netstat listening ports'
+        frequency: '360'
+      - format: 'full_command'
+        command: 'last -n 20'
+        frequency: '360'
+      - format: 'syslog'
+        location: "{{ wazuh_dir }}/logs/active-responses.log"
+    debian:
+      - format: 'syslog'
+        location: '/var/log/auth.log'
+      - format: 'syslog'
+        location: '/var/log/syslog'
+      - format: 'syslog'
+        location: '/var/log/dpkg.log'
+      - format: 'syslog'
+        location: '/var/log/kern.log'
+    centos:
+      - format: 'syslog'
+        location: '/var/log/messages'
+      - format: 'syslog'
+        location: '/var/log/secure'
+      - format: 'syslog'
+        location: '/var/log/maillog'
+      - format: 'audit'
+        location: '/var/log/audit/audit.log'
+  globals:
+    - '127.0.0.1'
+    - '^localhost.localdomain$'
+    - '127.0.0.53'
+  commands:
+    - name: 'disable-account'
+      executable: 'disable-account'
+      timeout_allowed: 'yes'
+    - name: 'restart-wazuh'
+      executable: 'restart-wazuh'
+    - name: 'firewall-drop'
+      executable: 'firewall-drop'
+      expect: 'srcip'
+      timeout_allowed: 'yes'
+    - name: 'host-deny'
+      executable: 'host-deny'
+      timeout_allowed: 'yes'
+    - name: 'route-null'
+      executable: 'route-null'
+      timeout_allowed: 'yes'
+    - name: 'win_route-null'
+      executable: 'route-null.exe'
+      timeout_allowed: 'yes'
+    - name: 'netsh'
+      executable: 'netsh.exe'
+      timeout_allowed: 'yes'
+  ruleset:
+    rules_path: 'custom_ruleset/rules/'
+    decoders_path: 'custom_ruleset/decoders/'
+    cdb_lists:
+      - 'audit-keys'
+      - 'security-eventchannel'
+      - 'amazon/aws-eventnames'
+  rule_exclude:
+    - '0215-policy_rules.xml'
+  syslog_outputs:
+    - server: null
+      port: null
+      format: null
+  integrations:
+    # slack
+    - name: null
+      hook_url: '<hook_url>'
+      alert_level: 10
+      alert_format: 'json'
+      rule_id: null
+    # pagerduty
+    - name: null
+      api_key: '<api_key>'
+      alert_level: 12
+  monitor_aws:
+    disabled: 'yes'
+    interval: '10m'
+    run_on_start: 'yes'
+    skip_on_error: 'yes'
+    s3:
+      - name: null
+        bucket_type: null
+        path: null
+        only_logs_after: null
+        access_key: null
+        secret_key: null
+  labels:
+    enable: false
+    list:
+      - key: Env
+        value: Production
+  agents_disconnection_time: '20s'
+  agents_disconnection_alert_time: '100s'

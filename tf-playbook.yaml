@@ -1,13 +1,20 @@
 - name: Configuring hardening
-  hosts: all
+  hosts: audit
   become: yes
   roles:
-    - devsec.hardening.os_hardening
-    - devsec.hardening.ssh_hardening
+    - wazuh-manager
+  vars:
+    instances:
+      node1:
+        name: node-1       # Important: must be equal to indexer_node_name.
+        ip: 127.0.0.1
+        role: indexer
+    ansible_shell_allow_world_readable_temp: true
 
-- name: Configure nginx
-  hosts: client
+- name: Example Wazuh Configuration
+  hosts: server
   become: yes
   roles:
-    - nginxinc.nginx
-    - devsec.hardening.nginx_hardening
+    - wazuh-agent
+  vars:
+    wazuh_managers: "{{ groups['audit'] }}"

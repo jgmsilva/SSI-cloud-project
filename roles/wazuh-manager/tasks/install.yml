@@ -1,0 +1,19 @@
+- name: Install Wazuh indexer
+  apt:
+    name: wazuh-indexer
+    state: present
+
+- name: Install Filebeat
+  apt:
+    name: filebeat
+    state: present
+
+- name: Install Wazuh manager
+  apt:
+    name: wazuh-manager
+    state: present
+
+- name: Install Wazuh dashboard
+  apt:
+    name: wazuh-dashboard
+    state: present

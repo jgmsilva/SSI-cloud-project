@@ -1,8 +1,0 @@
-- name: install ossec-hids
-  ansible.builtin.apt:
-    name: ossec-hids
-    state: latest
-- name: install ossec-hids-server
-  ansible.builtin.apt:
-    name: ossec-hids-server
-    state: latest

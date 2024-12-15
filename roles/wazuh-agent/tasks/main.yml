@@ -1,0 +1,31 @@
+- import_tasks: setup.yml
+- name: Install wazuh-agent
+  apt:
+    name: wazuh-agent
+    state: present
+    cache_valid_time: 3600
+
+- name: Agent registration via auto-enrollment
+  debug:
+    msg: Agent registration will be performed through enrollment option in templated ossec.conf
+
+- name: Ensure group "wazuh" exists
+  ansible.builtin.group:
+    name: wazuh
+    state: present
+
+- name: Installing agent configuration (ossec.conf)
+  template:
+    src: var-ossec-etc-ossec-agent.conf.j2
+    dest: "{{ wazuh_dir }}/etc/ossec.conf"
+    owner: root
+    group: wazuh
+    mode: 0644
+  notify: restart wazuh-agent
+
+- name: Ensure Wazuh Agent service is started and enabled
+  service:
+    name: wazuh-agent
+    enabled: true
+    state: started
+  tags: config
