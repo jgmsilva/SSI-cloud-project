@@ -22,15 +22,18 @@
   with_dict: "{{ os_vars }}"
   tags: always
 
-- name: Check SELinux status
-  become: true
-  ansible.builtin.command: getenforce
-  register: selinux_status
-  ignore_errors: true
+- name: Import tasks for auditd
+  ansible.builtin.import_tasks: auditd.yml
+  tags: auditd
+  when: os_auditd_enabled | bool
 
-- name: Include selinux specific tasks
-  ansible.builtin.include_tasks: selinux.yml
-  when: selinux_status.stdout != "Enforcing"
+- name: Import tasks for cron
+  ansible.builtin.import_tasks: cron.yml
+  tags: cron
+  when: os_cron_enabled | bool
+
+- name: Install openssh package and configure the service
+  ansible.builtin.include_tasks: install.yml
 
 # ensure that its not possible to logout the siste by brute force
 - name: Disable CTRL-ALT-DEL
@@ -47,6 +50,16 @@
     state: absent
     purge: true
 
+- name: Import tasks to configure login_defs
+  ansible.builtin.import_tasks: login_defs.yml
+  tags: login_defs
+  when: os_login_defs_enabled | bool
+
+- name: Import tasks to minimize access permissions
+  ansible.builtin.import_tasks: minimize_access.yml
+  tags: minimize_access
+  when: os_minimize_access_enabled | bool
+
 - name: Limit access to home directories of regular (non-system, non-root) accounts
   ansible.builtin.file:
     mode: "0700"
@@ -59,23 +72,6 @@
     - regular_users is defined and (regular_users | length > 0)
     - item not in os_ignore_home_folder_users | default([])
 
-# see https://github.com/dev-sec/ansible-collection-hardening/issues/763
-- name: Change Debian/Ubuntu systems so ssh starts traditionally instead of socket-activated
-  ansible.builtin.include_tasks: disable-systemd-socket.yml
-  when:
-    - (ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version is version('22.04', '>=')) or
-      (ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version is version('12', '>='))
-
-- name: Ensure privilege separation directory exists
-  ansible.builtin.file:
-    path: /run/sshd
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-  when:
-    - ansible_facts.os_family == 'Debian'
-
 - name: Get openssh-version
   ansible.builtin.command: ssh -V
   register: sshd_version_raw
@@ -85,6 +81,37 @@
 - name: Parse openssh-version
   ansible.builtin.set_fact:
     sshd_version: "{{ sshd_version_raw.stderr | regex_replace('.*_([0-9]*.[0-9]).*', '\\1') }}"
+
+- name: Set default for ssh_host_key_files if not supplied
+  ansible.builtin.include_tasks: crypto_hostkeys.yml
+  when:
+    - ssh_server_hardening | bool
+    - ssh_host_key_files is undefined
+
+- name: Set default for ssh_macs if not supplied
+  ansible.builtin.include_tasks: crypto_macs.yml
+  when:
+    - ssh_macs is undefined
+
+- name: Set default for ssh_ciphers if not supplied
+  ansible.builtin.include_tasks: crypto_ciphers.yml
+  when:
+    - ssh_ciphers is undefined
+
+- name: Set default for ssh_kex if not supplied
+  ansible.builtin.include_tasks: crypto_kex.yml
+  when:
+    - ssh_kex is undefined
+
+- name: Create revoked_keys and set permissions to root/600
+  become: true
+  ansible.builtin.template:
+    src: revoked_keys.j2
+    dest: /etc/ssh/revoked_keys
+    mode: "0600"
+    owner: "{{ ssh_owner }}"
+    group: "{{ ssh_group }}"
+  notify: Restart sshd
 
 - name: Create sshd_config and set permissions to root/600
   become: true
@@ -97,41 +124,51 @@
     validate: "{{ sshd_path }} -T -C user=root -C host=localhost -C addr=localhost -C lport=22 -f %s"
   notify: Restart sshd
 
+- name: Disable dynamic MOTD
+  become: true
+  community.general.pamd:
+    name: sshd
+    type: session
+    control: optional
+    module_path: pam_motd.so
+    state: absent
+    backup: true
+  when:
+    - ssh_pam_support | bool
+    - not (ssh_print_pam_motd | bool)
+
+- name: Check if for weak DH parameters in {{ sshd_moduli_file }}
+  ansible.builtin.shell: awk '$5 < {{ sshd_moduli_minimum }}' {{ sshd_moduli_file }}
+  register: sshd_register_moduli
+  changed_when: false
+  check_mode: false
+
+- name: Remove all small primes # noqa no-changed-when
+  ansible.builtin.shell: >
+    awk '$5 >= {{ sshd_moduli_minimum }}' {{ sshd_moduli_file }} > {{ sshd_moduli_file }}.new ; [ -r {{ sshd_moduli_file }}.new
+    -a -s {{ sshd_moduli_file }}.new ] && mv {{ sshd_moduli_file }}.new {{ sshd_moduli_file }} || true
+  notify: Restart sshd
+  when:
+    - ssh_server_hardening | bool
+    - sshd_register_moduli.stdout
+
 ## OS HARDENING SYSCTL - KERNEL CONFIGURATION
-- name: Protect sysctl.conf
-  ansible.builtin.file:
-    path: /etc/sysctl.conf
-    owner: root
-    group: root
-    mode: "0440"
-    state: touch
-    modification_time: preserve
-    access_time: preserve
-
-- name: Set Daemon umask, do config for rhel-family | NSA 2.2.4.1
-  ansible.builtin.template:
-    src: etc/sysconfig/rhel_sysconfig_init.j2
-    dest: /etc/sysconfig/init
-    owner: root
-    group: root
-    mode: "0544"
-  when: ansible_facts.os_family == 'RedHat'
-
-- name: Change sysctls
-  when: ansible_virtualization_type not in ['docker', 'lxc', 'openvz']
-  block:
-    - name: Change various sysctl-settings, look at the sysctl-vars file for documentation
-      ansible.posix.sysctl:
-        name: "{{ item.key }}"
-        value: "{{ item.value }}"
-        sysctl_set: true
-        state: present
-        reload: true
-        ignoreerrors: true
-      with_dict: "{{ sysctl_config }}"
-      when: item.key not in sysctl_unsupported_entries | default()
+- name: Import tasks to configure sysctl
+  ansible.builtin.import_tasks: sysctl.yml
+  tags: sysctl
+  when: os_sysctl_enabled | bool
 
 - name: Import tasks to configure modules
   ansible.builtin.import_tasks: modprobe.yml
   tags: modprobe
   when: os_modprobe_enabled | bool
+
+- name: Check SELinux status
+  become: true
+  ansible.builtin.command: getenforce
+  register: selinux_status
+  ignore_errors: true
+
+- name: Include selinux specific tasks
+  ansible.builtin.include_tasks: selinux.yml
+  when: selinux_status.stdout != "Enforcing"

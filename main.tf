@@ -32,8 +32,6 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
     file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
   }
 
-
-
   cpu {
     cores = each.value.cpu_cores
     type  = "x86-64-v2-AES" # recommended for modern CPUs
@@ -95,36 +93,36 @@ resource "local_file" "known_hosts" {
   file_permission = "0666"
 }
 
-resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
-  content_type = "snippets"
-  datastore_id = "local"
-  node_name    = "pve"
+# resource "proxmox_virtual_environment_file" "user_data_cloud_config" {
+#   content_type = "snippets"
+#   datastore_id = "local"
+#   node_name    = "pve"
 
-  source_raw {
-    data = <<-EOF
-    #cloud-config
-    hostname: vm1
-    users:
-      - default
-      - name: ansible
-        groups:
-          - sudo
-        shell: /bin/bash
-        ssh_authorized_keys:
-          - ${trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)}
-        sudo: ALL=(ALL) NOPASSWD:ALL
-    write_files:
-      - path: /etc/fstab
-        content: |
-          LABEL=cloudimg-rootfs   /    ext4   defaults    0 1
-    runcmd:
-      - "mkfs.ext4 /dev/vda1"
-      - "mkdir -p /mnt/data"
-      - "mount /dev/vda1 /mnt/data"
-      - "echo '/dev/vda1 /mnt/data ext4 defaults 0 1' >> /etc/fstab"
-      - apt update
-    EOF
+#   source_raw {
+#     data = <<-EOF
+#     #cloud-config
+#     hostname: vm1
+#     users:
+#       - default
+#       - name: ansible
+#         groups:
+#           - sudo
+#         shell: /bin/bash
+#         ssh_authorized_keys:
+#           - ${trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)}
+#         sudo: ALL=(ALL) NOPASSWD:ALL
+#     write_files:
+#       - path: /etc/fstab
+#         content: |
+#           LABEL=cloudimg-rootfs   /    ext4   defaults    0 1
+#     runcmd:
+#       - "mkfs.ext4 /dev/vda1"
+#       - "mkdir -p /mnt/data"
+#       - "mount /dev/vda1 /mnt/data"
+#       - "echo '/dev/vda1 /mnt/data ext4 defaults 0 1' >> /etc/fstab"
+#       - apt update
+#     EOF
 
-    file_name = "user-data-cloud-config.yaml"
-  }
-}
+#     file_name = "user-data-cloud-config.yaml"
+#   }
+# }

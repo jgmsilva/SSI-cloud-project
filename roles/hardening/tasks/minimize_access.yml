@@ -61,6 +61,7 @@
   loop: "{{ minimize_access_passwd_files.results }}"
 
 - name: Change su-binary to only be accessible to user and group root
+  become: true
   ansible.builtin.file:
     dest: /bin/su
     owner: root
@@ -80,6 +81,7 @@
     _proc_mnt_options: "{{ proc_mnt_options }},hidepid={{ hidepid_option }}"
 
 - name: Set option hidepid for proc filesystem
+  become: true
   ansible.posix.mount:
     path: /proc
     src: proc

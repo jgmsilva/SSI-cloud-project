@@ -28,7 +28,7 @@
 - name: Reboot the system
   ansible.builtin.reboot:
     msg: "Rebooting to apply SELinux changes"
-    reboot_timeout: 300
+    reboot_timeout: 200
   become: true
 
 - name: Activate SELinux

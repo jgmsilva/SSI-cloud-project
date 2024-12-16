@@ -1,12 +1,12 @@
 ---
-- name: Replace default 2048 bits RSA keypair
-  community.crypto.openssh_keypair:
-    state: present
-    type: rsa
-    size: "{{ ssh_host_rsa_key_size }}"
-    path: "{{ ssh_host_keys_dir }}/ssh_host_rsa_key"
-    force: false
-    regenerate: partial_idempotence
+# - name: Replace default 2048 bits RSA keypair
+#   community.crypto.openssh_keypair:
+#     state: present
+#     type: rsa
+#     size: "{{ ssh_host_rsa_key_size }}"
+#     path: "{{ ssh_host_keys_dir }}/ssh_host_rsa_key"
+#     force: false
+#     regenerate: partial_idempotence
 
 - name: Set hostkeys according to openssh-version if openssh >= 5.3
   ansible.builtin.set_fact:

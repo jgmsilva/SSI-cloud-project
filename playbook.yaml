@@ -4,11 +4,25 @@
     - name: Ping my hosts
       ansible.builtin.ping:
 
+    - name: Wait for apt lock to be released
+      shell: |
+        while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1; do
+          echo "Waiting for other apt/dpkg processes to finish..."
+          sleep 5
+        done
+      retries: 5
+      delay: 10
+      register: apt_lock_check
+      until: apt_lock_check.rc == 0
+
     - name: Install basics packages
       become: true
       ansible.builtin.apt:
         name: ["acl"]
-      delay: 100
+      retries: 5
+      delay: 10
+      register: apt_result
+      until: apt_result is succeeded
 
 - hosts: server
   roles:

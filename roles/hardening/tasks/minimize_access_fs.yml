@@ -1,5 +1,6 @@
 ---
 - name: "Configure hardened options for mount {{ mount.path }}"
+  become: true
   ansible.posix.mount:
     path: "{{ mount.path }}"
     src: "{{ mount.src | default(mountinfo.device, true) }}"
@@ -22,6 +23,7 @@
   register: mountpoint_exists
 
 - name: "Harden permissions for directory of mount {{ mount.path }}"
+  become: true
   ansible.builtin.file:
     dest: "{{ mount.path }}"
     owner: "{{ mount.owner }}"
@@ -33,4 +35,4 @@
 - name: "Register changed mountpoints"
   ansible.builtin.set_fact:
     mountpoints_changed: "{{ mountpoints_changed | default([]) + [mount.path] }}"
-  when: mountpoint.changed  # noqa no-handler
+  when: mountpoint.changed # noqa no-handler

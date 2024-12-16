@@ -1,5 +1,4 @@
 ---
-
 - name: Install openssh package(s)
   ansible.builtin.package:
     name: "{{ pkg }}"
@@ -12,8 +11,6 @@
 - name: Change Debian/Ubuntu systems so ssh starts traditionally instead of socket-activated
   ansible.builtin.include_tasks: disable-systemd-socket.yml
   when:
-    - ssh_server_hardening | bool
-    - ssh_server_enabled | bool
     - (ansible_facts.distribution == 'Ubuntu' and ansible_facts.distribution_major_version is version('22.04', '>=')) or
       (ansible_facts.os_family == 'Debian' and ansible_facts.distribution_major_version is version('12', '>='))
 
@@ -23,7 +20,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   when:
     - ssh_server_hardening | bool
     - ssh_server_enabled | bool

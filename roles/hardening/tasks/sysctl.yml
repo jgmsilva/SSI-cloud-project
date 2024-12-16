@@ -1,5 +1,6 @@
 ---
 - name: Protect sysctl.conf
+  become: true
   ansible.builtin.file:
     path: /etc/sysctl.conf
     owner: root
@@ -20,23 +21,8 @@
 
 - name: Change sysctls
   when: ansible_virtualization_type not in ['docker', 'lxc', 'openvz']
+  become: true
   block:
-    - name: Create a combined sysctl-dict if os-dependent sysctls are defined
-      ansible.builtin.set_fact:
-        sysctl_config: "{{ sysctl_config | combine(sysctl_custom_config) }}"
-      when: sysctl_custom_config | default()
-
-    # sysctl_rhel_config is kept for backwards-compatibility. use sysctl_custom_config instead
-    - name: Create a combined sysctl-dict if os-dependent sysctls are defined
-      ansible.builtin.set_fact:
-        sysctl_config: "{{ sysctl_config | combine(sysctl_rhel_config) }}"
-      when: sysctl_rhel_config | default()
-
-    - name: Create a combined sysctl-dict if overwrites are defined
-      ansible.builtin.set_fact:
-        sysctl_config: "{{ sysctl_config | combine(sysctl_overwrite) }}"
-      when: sysctl_overwrite | default()
-
     - name: Change various sysctl-settings, look at the sysctl-vars file for documentation
       ansible.posix.sysctl:
         name: "{{ item.key }}"
@@ -49,6 +35,7 @@
       when: item.key not in sysctl_unsupported_entries | default()
 
 - name: Apply ufw defaults
+  become: true
   ansible.builtin.template:
     src: etc/default/ufw.j2
     dest: /etc/default/ufw

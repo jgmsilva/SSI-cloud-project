@@ -4,3 +4,9 @@
 {% for fs in os_unused_filesystems | difference(os_filesystem_whitelist) | sort %}
 install {{fs}} /bin/true
 {% endfor %}
+
+install usb-storage /bin/true
+
+blacklist firewire-core
+
+blacklist thunderbolt

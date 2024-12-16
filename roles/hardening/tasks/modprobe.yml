@@ -1,5 +1,6 @@
 ---
 - name: Install modprobe to disable filesystems | os-10
+  become: true
   ansible.builtin.package:
     name: "{{ modprobe_package }}"
     state: present
@@ -21,6 +22,7 @@
     os_unused_filesystems: "{{ os_unused_filesystems | difference(ansible_mounts | map(attribute='fstype') | list) }}"
 
 - name: Disable unused filesystems and USB/firewire/thunderbolt devices | os-10
+  become: true
   ansible.builtin.template:
     src: etc/modprobe.d/modprobe.j2
     dest: /etc/modprobe.d/dev-sec.conf
