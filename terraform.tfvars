@@ -15,7 +15,7 @@ servervm_object = {
   #   name         = "vm2"
   #   tags         = ["audit"]
   #   ipv4_address = "192.168.122.246"
-  #   memory       = 512
+  #   memory       = 1024
   #   cpu_cores    = 1
   #   disk_size    = 20
   # }

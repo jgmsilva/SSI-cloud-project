@@ -15,7 +15,6 @@ resource "proxmox_virtual_environment_vm" "client_vm" {
 
     user_account {
       username = "ansible"
-      password = "password"
       keys     = [trimspace(tls_private_key.ubuntu_vm_key.public_key_openssh)]
 
     }
