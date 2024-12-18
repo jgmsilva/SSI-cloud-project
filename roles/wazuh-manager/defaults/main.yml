@@ -26,13 +26,13 @@ indexer_discovery_nodes:
 
 wazuh_template_branch: v4.9.2
 filebeat_module_package_url: "https://packages.wazuh.com/4.x/filebeat"
-filebeat_ssl_dir: /etc/pki/filebeat
+filebeat_ssl_dir: /etc/filebeat/certs
 filebeat_module_package_name: wazuh-filebeat-0.4.tar.gz
 filebeat_module_package_path: /tmp/
 filebeat_module_destination: /usr/share/filebeat/module
 filebeat_module_folder: /usr/share/filebeat/module/wazuh
 filebeat_output_indexer_hosts:
-  - "localhost"
+  - "127.0.0.1"
 filebeat_output_indexer_port: 9200
 filebeat_node_name: node-1
 
@@ -55,6 +55,13 @@ dashboard_server_host: "0.0.0.0"
 dashboard_server_port: "443"
 dashboard_server_name: "dashboard"
 dashboard_password: admin
+
+instances:
+  node1:
+    name: "{{ indexer_node_name }}"
+    ip: 127.0.0.1
+    role: indexer
+  
 
 indexer_jvm_xms: null
 indexer_nolog_sensible: true

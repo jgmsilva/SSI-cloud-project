@@ -1,0 +1,7 @@
+suspicious_programs:
+  - name: ncat
+    severity: yellow
+  - name: nc
+    severity: red
+  - name: tcpdump
+    severity: orange

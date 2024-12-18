@@ -1,0 +1,11 @@
+- name: configure auditd
+  block:
+    - lineinfile:
+        path: /etc/audit/rules.d/audit.rules
+        create: yes
+        line: "-a exit,always -F auid=1000 -F egid!=994 -F auid!=-1 -F arch=b32 -S execve -k audit-wazuh-c"
+    - lineinfile:
+        path: /etc/audit/rules.d/audit.rules
+        create: yes
+        line: "-a exit,always -F auid=1000 -F egid!=994 -F auid!=-1 -F arch=b64 -S execve -k audit-wazuh-c"
+  notify: restart auditd

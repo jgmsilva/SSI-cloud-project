@@ -26,22 +26,17 @@
       register: apt_result
       until: apt_result is succeeded
 
-# - hosts: audit
-#   become: true
-#   roles:
-#     - wazuh-manager
-#   vars:
-#     instances:
-#       node1:
-#         name: pve # Important: must be equal to indexer_node_name.
-#         ip: 127.0.0.1
-#         role: indexer
-#     ansible_shell_allow_world_readable_temp: true
+- hosts: audit
+  become: true
+  roles:
+    - wazuh-manager
+  vars:
+    ansible_shell_allow_world_readable_temp: true
 
 - hosts: server
   become: true
   roles:
-    - wazuh-agent
     - hardening
+    - wazuh-agent
   vars:
     wazuh_managers: "{{ groups['audit'] }}"

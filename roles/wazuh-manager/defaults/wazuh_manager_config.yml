@@ -254,6 +254,7 @@ wazuh_manager_config:
       - 'audit-keys'
       - 'security-eventchannel'
       - 'amazon/aws-eventnames'
+      - 'suspicious-programs'
   rule_exclude:
     - '0215-policy_rules.xml'
   syslog_outputs:

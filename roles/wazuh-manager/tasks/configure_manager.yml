@@ -124,6 +124,19 @@
     mode: 0644
   notify: restart wazuh-manager
 
+- name: Load wazuh_manager_config
+  include_vars:
+    file: ../defaults/wazuh_auditd_suspicious_programs.yml
+
+- name: configure suspicious programs
+  template:
+    src: var-ossec-lists-suspicious-programs.j2
+    dest: "{{ wazuh_dir }}/etc/lists/suspicious-programs"
+    owner: root
+    group: wazuh
+    mode: 0644
+  notify: restart wazuh-manager
+
 - name: Ensure Wazuh Manager service is started and enabled.
   service:
     name: "wazuh-manager"
