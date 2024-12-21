@@ -9,3 +9,4 @@ keys/
 *.pub
 inventory.ini
 terraform_known_hosts
+outputs.json
